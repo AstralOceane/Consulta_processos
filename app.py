@@ -1,4 +1,3 @@
-import unittest
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
@@ -30,79 +29,78 @@ def enviar_email(mensagem):
     server.sendmail(de, para, msg.as_string())
     server.quit()
 
-class TestAutomatizado(unittest.TestCase):
-    def setUp(self):
-        self.driver = webdriver.Chrome()
-        self.driver.get('https://pje-consulta-publica.tjmg.jus.br/')
-        sleep(15)
-        self.hash_inicial = None
+# Inicializar o WebDriver do Chrome
+driver = webdriver.Chrome()
+driver.get('https://pje-consulta-publica.tjmg.jus.br/')
+sleep(15)
+hash_inicial = None
 
-    def test_consulta_e_coleta_de_dados(self):
-        numero_oab = 133864
+# Digitar o número da OAB
+numero_oab = 133864
+campo_oab = driver.find_element(By.XPATH, "//input[@id='fPP:Decoration:numeroOAB']")
+campo_oab.send_keys(numero_oab)
 
-        campo_oab = self.driver.find_element(By.XPATH, "//input[@id='fPP:Decoration:numeroOAB']")
-        campo_oab.send_keys(numero_oab)
+# Selecionar o estado
+dropdown_estados = driver.find_element(By.XPATH, "//select[@id='fPP:Decoration:estadoComboOAB']")
+opcoes_estados = Select(dropdown_estados)
+opcoes_estados.select_by_visible_text('SP')
 
-        dropdown_estados = self.driver.find_element(By.XPATH, "//select[@id='fPP:Decoration:estadoComboOAB']")
-        opcoes_estados = Select(dropdown_estados)
-        opcoes_estados.select_by_visible_text('SP')
+# Clicar em pesquisar
+botao_pesquisar = driver.find_element(By.XPATH, "//input[@id='fPP:searchProcessos']")
+botao_pesquisar.click()
+sleep(10)
 
-        botao_pesquisar = self.driver.find_element(By.XPATH, "//input[@id='fPP:searchProcessos']")
-        botao_pesquisar.click()
-        sleep(10)
+# Entrar em cada um dos processos
+processos = driver.find_elements(By.XPATH, "//b[@class='btn-block']")
 
-        # Verifica se houve alterações na página
-        hash_atual = calcular_hash(self.driver.page_source)
-        if self.hash_inicial is not None and hash_atual != self.hash_inicial:
-            # Se houve alterações, enviar um e-mail
-            enviar_email("Alterações detectadas na página!")
+try:
+    workbook = openpyxl.load_workbook('dados.xlsx')
+except FileNotFoundError:
+    workbook = openpyxl.Workbook()
 
-        self.hash_inicial = hash_atual
+for processo in processos:
+    processo.click()
+    sleep(10)
+    janelas = driver.window_handles
+    driver.switch_to.window(janelas[-1])
+    driver.set_window_size(1920, 1080)
 
-        processos = self.driver.find_elements(By.XPATH, "//b[@class='btn-block']")
+    numero_processo_element = driver.find_element(By.XPATH, "//div[@class='col-sm-12 ']")
+    data_distribuicao_element = driver.find_element(By.XPATH, "//div[@class='value col-sm-12 ']")
 
-        try:
-            workbook = openpyxl.load_workbook('dados.xlsx')
-        except FileNotFoundError:
-            workbook = openpyxl.Workbook()
+    numero_processo = numero_processo_element.text
+    data_distribuicao = data_distribuicao_element.text
 
-        for processo in processos:
-            processo.click()
-            sleep(10)
-            janelas = self.driver.window_handles
-            self.driver.switch_to.window(janelas[-1])
-            self.driver.set_window_size(1920, 1080)
+    movimentacoes = driver.find_elements(By.XPATH, "//div[@id='j_id132:processoEventoPanel_body']//tr[contains(@class,'rich-table-row')]//td//div//div//span")
+    lista_movimentacoes = [movimentacao.text for movimentacao in movimentacoes]
 
-            numero_processo_element = self.driver.find_element(By.XPATH, "//div[@class='col-sm-12 ']")
-            data_distribuicao_element = self.driver.find_element(By.XPATH, "//div[@class='value col-sm-12 ']")
+    try:
+        pagina_processo = workbook[numero_processo]
+    except KeyError:
+        pagina_processo = workbook.create_sheet(numero_processo)
 
-            numero_processo = numero_processo_element.text
-            data_distribuicao = data_distribuicao_element.text
+    pagina_processo['A1'] = "Número Processo"
+    pagina_processo['B1'] = "Data de Distribuição"
+    pagina_processo['C1'] = "Movimentações"
+    pagina_processo['A2'] = numero_processo
+    pagina_processo['B2'] = data_distribuicao
 
-            movimentacoes = self.driver.find_elements(By.XPATH, "//div[@id='j_id132:processoEventoPanel_body']//tr[contains(@class,'rich-table-row')]//td//div//div//span")
-            lista_movimentacoes = [movimentacao.text for movimentacao in movimentacoes]
+    for index, movimentacao in enumerate(lista_movimentacoes, start=3):
+        pagina_processo.cell(row=index, column=3, value=movimentacao)
 
-            try:
-                pagina_processo = workbook[numero_processo]
-            except KeyError:
-                pagina_processo = workbook.create_sheet(numero_processo)
+    workbook.save('dados.xlsx')
 
-            pagina_processo['A1'] = "Número Processo"
-            pagina_processo['B1'] = "Data de Distribuição"
-            pagina_processo['C1'] = "Movimentações"
-            pagina_processo['A2'] = numero_processo
-            pagina_processo['B2'] = data_distribuicao
+    # Verifica se houve alterações na página
+    hash_atual = calcular_hash(driver.page_source)
+    if hash_inicial is not None and hash_atual != hash_inicial:
+        # Se houve alterações, enviar um e-mail
+        enviar_email("Alterações detectadas na página!")
 
-            for index, movimentacao in enumerate(lista_movimentacoes, start=3):
-                pagina_processo.cell(row=index, column=3, value=movimentacao)
+    hash_inicial = hash_atual
 
-            workbook.save('dados.xlsx')
+    driver.close()
+    sleep(5)
+    driver.switch_to.window(driver.window_handles[0])
 
-            self.driver.close()
-            sleep(5)
-            self.driver.switch_to.window(self.driver.window_handles[0])
-
-        self.driver.quit()
-
-if __name__ == '__main__':
-    unittest.main()
+# Fechar o WebDriver
+driver.quit()
