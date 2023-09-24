@@ -5,13 +5,13 @@ Este é um exemplo de código em Python que automatiza a consulta de processos e
 ## Pré-requisitos
 
 - Python 3.x
-- Bibliotecas Python: selenium, openpyxl (você pode instalá-las com `pip install selenium openpyxl`)
+- pip install -r Requirements.txt (para instalar todas as biblitoecas necessarias para rodar o codigo)
 
 ## Configuração
 
 1. Clone este repositório para o seu sistema:
 
-git clone https://github.com/AstralOceane/Exercicios-de-Python.git
+git clone https://github.com/AstralOceane/Consulta_processos.git
 
 2. Preencha as informações necessárias nas variáveis :
 
@@ -50,3 +50,5 @@ Astral Oceane - [https://github.com/AstralOceane](https://github.com/AstralOcean
 ## Agradecimentos
 
 - Agradeço se quiser contribuir com melhorias ou idéias ou um estágio onde possa melhorar minhas habilidades :) no mais continuarei treinando realizando exercícios.
+- Video onde peguei a ideia para o codigo https://www.youtube.com/watch?v=mhJp7npBtfk&ab_channel=DevAprender%7CJhonatandeSouza
+- Agradecimentos ao meu amigo Bruno, que deu diversas ideias de melhorias para este projeto.
