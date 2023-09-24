@@ -41,9 +41,10 @@ campo_oab = driver.find_element(By.XPATH, "//input[@id='fPP:Decoration:numeroOAB
 campo_oab.send_keys(numero_oab)
 
 # Selecionar o estado
+codigo_estado = 'SP'
 dropdown_estados = driver.find_element(By.XPATH, "//select[@id='fPP:Decoration:estadoComboOAB']")
 opcoes_estados = Select(dropdown_estados)
-opcoes_estados.select_by_visible_text('SP')
+opcoes_estados.select_by_visible_text(codigo_estado)
 
 # Clicar em pesquisar
 botao_pesquisar = driver.find_element(By.XPATH, "//input[@id='fPP:searchProcessos']")
